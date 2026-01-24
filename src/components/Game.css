@@ -1,0 +1,48 @@
+.game-loading,
+.game-error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+}
+
+.game-error {
+  color: #d9534f;
+}
+
+.game-info {
+  text-align: center;
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: rgba(28, 28, 28, 0.3);
+  border-radius: 8px;
+}
+
+.game-info p {
+  margin: 0.25rem 0;
+  font-size: 1rem;
+}
+
+.game-info strong {
+  color: #fafffd;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.game-boards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .game-boards {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+.lobby-join-section {
+  display: flex;
+  flex-direction: column;
+}
