@@ -1,6 +1,8 @@
 import './App.css';
+import WaitingRoom from './components/WaitingRoom';
 
 function App() {
+  return <WaitingRoom />;
   return (
     <div className='app'>
       <h2>Fire Ship Battle</h2>

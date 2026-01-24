@@ -1,0 +1,33 @@
+.waiting-room {
+  width: 100%;
+  text-align: center;
+}
+
+.waiting-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 2rem 0.5rem;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fafffd;
+}
+.lobby-waiting-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.lobby-waiting-indicator::before,
+.lobby-waiting-indicator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+
+.lobby-waiting-indicator span {
+  font-weight: 600;
+}
