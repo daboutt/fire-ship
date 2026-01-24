@@ -1,0 +1,142 @@
+/* 1. Use a more-intuitive box-sizing model */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 2. Remove default margin */
+*:not(dialog) {
+  margin: 0;
+}
+
+/* 3. Enable keyword animations */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    interpolate-size: allow-keywords;
+  }
+}
+
+body {
+  /* 4. Add accessible line-height */
+  line-height: 1.5;
+  /* 5. Improve text rendering */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 6. Improve media defaults */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 7. Inherit fonts for form controls */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  touch-action: manipulation;
+}
+
+/* 8. Avoid text overflows */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* 9. Improve line wrapping */
+p {
+  text-wrap: pretty;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
+/*
+  10. Create a root stacking context
+*/
+#root,
+#__next {
+  isolation: isolate;
+}
+
+html,
+body {
+  background-color: #5c9d5e;
+  color: #fafffd;
+}
+
+input {
+  border: 2px solid #1c1c1c;
+  border-radius: 2px;
+  padding: 0.5rem;
+  color: #1c1c1c;
+  background-color: #fafffd;
+}
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px;
+}
+.lobby {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+lobby-divider {
+  display: flex;
+  align-items: center;
+  margin: 2rem 0;
+  color: #999;
+}
+
+.lobby-divider::before,
+.lobby-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.lobby-divider span {
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.lobby-hint {
+  text-align: center;
+  font-size: 0.875rem;
+  margin: 0.75rem 0 0 0;
+}
+.lobby-section {
+  margin: 2rem 0;
+}
+.lobby-input-code {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 1.25rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.lobby-input-code:focus {
+  outline: none;
+  border-color: #5c9d5e;
+  box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.3);
+}
