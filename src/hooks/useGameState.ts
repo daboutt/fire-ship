@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   ref,
   set,
@@ -8,8 +8,13 @@ import {
   DataSnapshot,
   onDisconnect,
   remove,
+  get,
 } from 'firebase/database';
 import { database } from '../firebase';
+import {
+  createBoardWithShips,
+  validateBoard,
+} from '../utils/shipPlacement';
 
 export type CellStatus = 'empty' | 'ship' | 'hit' | 'miss';
 
@@ -34,93 +39,32 @@ export interface GameState {
   winner?: 'player1' | 'player2';
 }
 
-// Helper function to create a board with randomly placed ships
-const createBoardWithShips = (): CellStatus[][] => {
-  const board: CellStatus[][] = Array.from({ length: 10 }, () =>
-    Array(10).fill('empty'),
-  );
 
-  // Ships to place: [size, count]
-  const ships = [
-    { size: 4, count: 1 }, // Battleship
-    { size: 3, count: 2 }, // Cruiser x2
-    { size: 2, count: 1 }, // Destroyer
-  ];
-
-  // Helper to check if placement is valid
-  const canPlaceShip = (
-    row: number,
-    col: number,
-    size: number,
-    isHorizontal: boolean,
-  ): boolean => {
-    if (isHorizontal) {
-      if (col + size > 10) return false;
-      for (let i = 0; i < size; i++) {
-        if (board[row][col + i] !== 'empty') return false;
-      }
-    } else {
-      if (row + size > 10) return false;
-      for (let i = 0; i < size; i++) {
-        if (board[row + i][col] !== 'empty') return false;
-      }
-    }
-    return true;
-  };
-
-  // Place ships randomly
-  ships.forEach(({ size, count }) => {
-    for (let ship = 0; ship < count; ship++) {
-      let placed = false;
-      let attempts = 0;
-      const maxAttempts = 100;
-
-      while (!placed && attempts < maxAttempts) {
-        const isHorizontal = Math.random() < 0.5;
-        const row = Math.floor(Math.random() * 10);
-        const col = Math.floor(Math.random() * 10);
-
-        if (canPlaceShip(row, col, size, isHorizontal)) {
-          if (isHorizontal) {
-            for (let i = 0; i < size; i++) {
-              board[row][col + i] = 'ship';
-            }
-          } else {
-            for (let i = 0; i < size; i++) {
-              board[row + i][col] = 'ship';
-            }
-          }
-          placed = true;
-        }
-        attempts++;
-      }
-    }
-  });
-
-  return board;
-};
 
 export function useGameState(roomCode: string | null, playerId: string) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Check if a room is still valid and playable
-  const checkRoomValidity = async (code: string): Promise<boolean> => {
-    try {
-      const gameRef = ref(database, `games/${code}`);
-      const snapshot = await new Promise<DataSnapshot>((resolve, reject) => {
-        onValue(gameRef, resolve, reject, { onlyOnce: true });
-      });
+  const checkRoomValidity = useCallback(
+    async (code: string): Promise<boolean> => {
+      try {
+        const gameRef = ref(database, `games/${code}`);
+        const snapshot = await new Promise<DataSnapshot>((resolve, reject) => {
+          onValue(gameRef, resolve, reject, { onlyOnce: true });
+        });
 
-      const game = snapshot.val();
-      if (!game) return false;
+        const game = snapshot.val();
+        if (!game) return false;
 
-      // Room exists and game is not finished
-      return game.gameStatus !== 'finished';
-    } catch {
-      return false;
-    }
-  };
+        // Room exists and game is not finished
+        return game.gameStatus !== 'finished';
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!roomCode) {
@@ -132,121 +76,164 @@ export function useGameState(roomCode: string | null, playerId: string) {
     // Determine which player this is
     let playerKey: 'player1' | 'player2' | null = null;
 
+    let isCancelled = false;
+    let unsubscribe: (() => void) | null = null;
+
     // Set up connection tracking
-    const setupConnectionTracking = async () => {
-      const snapshot = await new Promise<DataSnapshot>((resolve, reject) => {
-        onValue(gameRef, resolve, reject, { onlyOnce: true });
-      });
+    const init = async () => {
+      try {
+        const snapshot = await new Promise<DataSnapshot>((resolve, reject) => {
+          onValue(gameRef, resolve, reject, { onlyOnce: true });
+        });
 
-      const data = snapshot.val();
-      if (data) {
-        // Determine which player this is
-        if (data.players?.player1?.id === playerId) {
-          playerKey = 'player1';
-        } else if (data.players?.player2?.id === playerId) {
-          playerKey = 'player2';
-        }
-
-        if (playerKey) {
-          const playerConnectedRef = ref(
-            database,
-            `games/${roomCode}/players/${playerKey}/connected`,
-          );
-
-          // Mark as connected
-          await set(playerConnectedRef, true);
-
-          // Set up onDisconnect handler to mark as disconnected
-          const disconnectRef = onDisconnect(playerConnectedRef);
-          await disconnectRef.set(false);
-        }
-      }
-    };
-
-    setupConnectionTracking();
-
-    // Listen for game state changes
-    const unsubscribe = onValue(
-      gameRef,
-      (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          setGameState(data);
+          // Determine which player this is
+          if (data.players?.player1?.id === playerId) {
+            playerKey = 'player1';
+          } else if (data.players?.player2?.id === playerId) {
+            playerKey = 'player2';
+          }
 
-          // Check if both players are disconnected and delete room
-          const player1Connected = data.players?.player1?.connected ?? false;
-          const player2Connected = data.players?.player2?.connected ?? false;
-          if (!player1Connected && !player2Connected) {
-            console.log('Both players disconnected, deleting room...');
-            remove(gameRef).catch(console.error);
+          if (playerKey) {
+            const playerConnectedRef = ref(
+              database,
+              `games/${roomCode}/players/${playerKey}/connected`,
+            );
+
+            // Mark as connected
+            await set(playerConnectedRef, true);
+
+            // Set up onDisconnect handler to mark as disconnected
+            const disconnectRef = onDisconnect(playerConnectedRef);
+            await disconnectRef.set(false);
           }
         }
-      },
-      (error) => {
-        console.error('Firebase error:', error);
-        setError(error.message);
-      },
-    );
+      } catch (error) {
+        console.error('Error setting up connection tracking:', error);
+      }
 
-    return () => unsubscribe();
-  }, [roomCode, playerId]);
+      if (isCancelled) {
+        return;
+      }
 
-  const cleanGame = () => {
-    const gameRef = ref(database, `games/${roomCode}`);
+      // Listen for game state changes
+      unsubscribe = onValue(
+        gameRef,
+        (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            setGameState(data);
 
-    // Determine which player this is
-    let playerKey: 'player1' | 'player2' | null = null;
-
-    // Set up connection tracking
-    const setupConnectionTracking = async () => {
-      const snapshot = await new Promise<DataSnapshot>((resolve, reject) => {
-        onValue(gameRef, resolve, reject, { onlyOnce: true });
-      });
-
-      const data = snapshot.val();
-      if (data) {
-        // Determine which player this is
-        if (data.players?.player1?.id === playerId) {
-          playerKey = 'player1';
-        } else if (data.players?.player2?.id === playerId) {
-          playerKey = 'player2';
-        }
-
-        if (playerKey) {
-          const playerConnectedRef = ref(
-            database,
-            `games/${roomCode}/players/${playerKey}/connected`,
-          );
-
-          // Mark as connected
-          await set(playerConnectedRef, true);
-
-          // Set up onDisconnect handler to mark as disconnected
-          const disconnectRef = onDisconnect(playerConnectedRef);
-          await disconnectRef.set(false);
-          const otherPlayerStatus =
-            playerKey === 'player1'
-              ? data.players?.player2?.connected
-              : data.players?.player1?.connected;
-          if (!otherPlayerStatus) {
-            remove(gameRef).catch(console.error);
+            // Check if both players are disconnected and delete room
+            const player1Connected = data.players?.player1?.connected ?? false;
+            const player2Connected = data.players?.player2?.connected ?? false;
+            if (!player1Connected && !player2Connected) {
+              console.log('Both players disconnected, deleting room...');
+              remove(gameRef).catch((error) => {
+                console.error('Error deleting room:', error);
+              });
+            }
           }
-        }
+        },
+        (error) => {
+          console.error('Firebase error:', error);
+          setError(error.message);
+        },
+      );
+    };
+
+    void init();
+
+    return () => {
+      isCancelled = true;
+      if (unsubscribe) {
+        unsubscribe();
       }
     };
-    setupConnectionTracking();
-  };
+  }, [roomCode, playerId]);
+
+  const cleanGame = useCallback(async () => {
+    if (!roomCode) return;
+
+    const gameRef = ref(database, `games/${roomCode}`);
+
+    // Determine which player this is and mark them as disconnected.
+    let playerKey: 'player1' | 'player2' | null = null;
+
+    try {
+      const snapshot = await get(gameRef);
+
+      const data = snapshot.val();
+      if (!data) {
+        return;
+      }
+
+      if (data.players?.player1?.id === playerId) {
+        playerKey = 'player1';
+      } else if (data.players?.player2?.id === playerId) {
+        playerKey = 'player2';
+      }
+
+      if (!playerKey) {
+        return;
+      }
+
+      const otherPlayerKey = playerKey === 'player1' ? 'player2' : 'player1';
+      const otherPlayerConnected = data.players?.[otherPlayerKey]?.connected;
+
+      // Mark this player as disconnected.
+      await update(gameRef, {
+        [`players/${playerKey}/connected`]: false,
+      });
+
+      // If no other player is connected, clean up the entire game.
+      if (!otherPlayerConnected) {
+        await remove(gameRef);
+      }
+    } catch (error) {
+      console.error('Error cleaning game:', error);
+    }
+  }, [roomCode, playerId]);
   // Create a new game room
   const createGame = async (): Promise<string> => {
     const gamesRef = ref(database, 'games');
-    const newGameRef = push(gamesRef);
-    const roomCode = newGameRef.key!.substring(0, 6).toUpperCase();
+    
+    // Generate a unique room code
+    let generatedRoomCode: string = '';
+    let roomExists = true;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    // Try to find a unique room code
+    while (roomExists && attempts < maxAttempts) {
+      // Use timestamp + random chars for better uniqueness
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substring(2, 5);
+      generatedRoomCode = (timestamp + random).substring(0, 6).toUpperCase();
+
+      // Check if room already exists
+      const roomRef = ref(database, `games/${generatedRoomCode}`);
+      const snapshot = await get(roomRef);
+      roomExists = snapshot.exists();
+      attempts++;
+    }
+
+    // Fallback to push key if we couldn't find a unique code
+    if (roomExists) {
+      const newGameRef = push(gamesRef);
+      generatedRoomCode = newGameRef.key!.substring(0, 6).toUpperCase();
+    }
 
     // Create board with ships for player 1
-    const boardWithShips = createBoardWithShips();
+    const { board: boardWithShips, allShipsPlaced } = createBoardWithShips();
+
+    if (!allShipsPlaced) {
+      console.warn('Not all ships were placed successfully');
+    }
 
     const initialGameState: GameState = {
-      roomCode,
+      roomCode: generatedRoomCode,
       players: {
         player1: {
           id: playerId,
@@ -258,8 +245,8 @@ export function useGameState(roomCode: string | null, playerId: string) {
       gameStatus: 'waiting',
     };
 
-    await set(ref(database, `games/${roomCode}`), initialGameState);
-    return roomCode;
+    await set(ref(database, `games/${generatedRoomCode}`), initialGameState);
+    return generatedRoomCode;
   };
 
   // Join an existing game
@@ -284,6 +271,28 @@ export function useGameState(roomCode: string | null, playerId: string) {
         return false;
       }
       if (game.players.player2 && !game.players.player2?.connected) {
+        // Validate existing board before reusing
+        if (!validateBoard(game.players.player2.board)) {
+          console.warn(
+            'Invalid player2 board detected, creating new board',
+          );
+          const { board: newBoard, allShipsPlaced } = createBoardWithShips();
+          if (!allShipsPlaced) {
+            console.warn('Not all ships were placed successfully');
+          }
+          await update(gameRef, {
+            'players/player2': {
+              id: playerId,
+              board: newBoard,
+              ready: true,
+              connected: true,
+            },
+            gameStatus: 'playing',
+            currentTurn: game.currentTurn || 'player1',
+          });
+          return true;
+        }
+
         await update(gameRef, {
           'players/player2': {
             id: playerId,
@@ -297,6 +306,28 @@ export function useGameState(roomCode: string | null, playerId: string) {
         return true;
       }
       if (game.players.player1 && !game.players.player1?.connected) {
+        // Validate existing board before reusing
+        if (!validateBoard(game.players.player1.board)) {
+          console.warn(
+            'Invalid player1 board detected, creating new board',
+          );
+          const { board: newBoard, allShipsPlaced } = createBoardWithShips();
+          if (!allShipsPlaced) {
+            console.warn('Not all ships were placed successfully');
+          }
+          await update(gameRef, {
+            'players/player1': {
+              id: playerId,
+              board: newBoard,
+              ready: true,
+              connected: true,
+            },
+            gameStatus: 'playing',
+            currentTurn: game.currentTurn || 'player1',
+          });
+          return true;
+        }
+
         await update(gameRef, {
           'players/player1': {
             id: playerId,
@@ -310,7 +341,11 @@ export function useGameState(roomCode: string | null, playerId: string) {
         return true;
       }
       // Create board with ships for player 2
-      const boardWithShips = createBoardWithShips();
+      const { board: boardWithShips, allShipsPlaced } = createBoardWithShips();
+
+      if (!allShipsPlaced) {
+        console.warn('Not all ships were placed successfully');
+      }
 
       await update(gameRef, {
         'players/player2': {
@@ -368,43 +403,63 @@ export function useGameState(roomCode: string | null, playerId: string) {
     const opponentBoard = gameState.players[opponentKey]?.board;
     if (!opponentBoard) return;
 
-    // Check if cell has a ship
-    const isHit = opponentBoard[row][col] === 'ship';
-    const newStatus: CellStatus = isHit ? 'hit' : 'miss';
-
-    // Create a copy of the board with the new hit/miss
-    const updatedBoard = opponentBoard.map((r, rIdx) =>
-      r.map((c, cIdx) => {
-        if (rIdx === row && cIdx === col) {
-          return newStatus;
-        }
-        return c;
-      }),
+    // Use transaction-based update to avoid race conditions
+    const cellRef = ref(
+      database,
+      `games/${roomCode}/players/${opponentKey}/board/${row}/${col}`,
     );
 
-    // Check if all ships are destroyed (win condition)
-    const allShipsDestroyed = !updatedBoard.some((row) =>
-      row.some((cell) => cell === 'ship'),
-    );
+    try {
+      // Check the current cell status
+      const cellSnapshot = await get(cellRef);
+      const currentCellStatus = cellSnapshot.val();
 
-    // Update the opponent's board
-    const updates: Record<string, CellStatus | string> = {};
-    updates[`games/${roomCode}/players/${opponentKey}/board/${row}/${col}`] =
-      newStatus;
-
-    // Check for win
-    if (allShipsDestroyed) {
-      updates[`games/${roomCode}/gameStatus`] = 'finished';
-      updates[`games/${roomCode}/winner`] = playerKey;
-    } else {
-      // Only switch turns on a miss - if hit, player keeps their turn
-      if (!isHit) {
-        const nextTurn = playerKey === 'player1' ? 'player2' : 'player1';
-        updates[`games/${roomCode}/currentTurn`] = nextTurn;
+      // Don't allow attacking already attacked cells
+      if (currentCellStatus === 'hit' || currentCellStatus === 'miss') {
+        console.log('Cell already attacked');
+        return;
       }
-    }
 
-    await update(ref(database), updates);
+      // Check if cell has a ship
+      const isHit = currentCellStatus === 'ship';
+      const newStatus: CellStatus = isHit ? 'hit' : 'miss';
+
+      // Create a copy of the board with the new hit/miss
+      const updatedBoard = opponentBoard.map((r, rIdx) =>
+        r.map((c, cIdx) => {
+          if (rIdx === row && cIdx === col) {
+            return newStatus;
+          }
+          return c;
+        }),
+      );
+
+      // Check if all ships are destroyed (win condition)
+      const allShipsDestroyed = !updatedBoard.some((row) =>
+        row.some((cell) => cell === 'ship'),
+      );
+
+      // Update the opponent's board
+      const updates: Record<string, CellStatus | string> = {};
+      updates[`games/${roomCode}/players/${opponentKey}/board/${row}/${col}`] =
+        newStatus;
+
+      // Check for win
+      if (allShipsDestroyed) {
+        updates[`games/${roomCode}/gameStatus`] = 'finished';
+        updates[`games/${roomCode}/winner`] = playerKey;
+      } else {
+        // Only switch turns on a miss - if hit, player keeps their turn
+        if (!isHit) {
+          const nextTurn = playerKey === 'player1' ? 'player2' : 'player1';
+          updates[`games/${roomCode}/currentTurn`] = nextTurn;
+        }
+      }
+
+      await update(ref(database), updates);
+    } catch (error) {
+      console.error('Error making move:', error);
+    }
   };
 
   // Start the game (after both players are ready)
