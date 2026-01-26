@@ -13,7 +13,7 @@ export default function Game() {
     const stored = localStorage.getItem(PLAYER_ID_KEY);
     if (stored) return stored;
 
-    const newId = `player-${Math.random().toString(36).substr(2, 9)}`;
+    const newId = `player-${Math.random().toString(36).slice(2, 11)}`;
     localStorage.setItem(PLAYER_ID_KEY, newId);
     return newId;
   });
