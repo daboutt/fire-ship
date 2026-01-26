@@ -158,7 +158,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
 
     const gameRef = ref(database, `games/${roomCode}`);
 
-    // Determine which player this is and mark them as disconnected.
+    // Determine which player this is and mark them as disconnected
     let playerKey: 'player1' | 'player2' | null = null;
 
     try {
@@ -195,6 +195,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
       console.error('Error cleaning game:', error);
     }
   }, [roomCode, playerId]);
+
   // Create a new game room
   const createGame = async (): Promise<string> => {
     const gamesRef = ref(database, 'games');

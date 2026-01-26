@@ -11,7 +11,7 @@ export const SHIPS: Ship[] = [
   { size: 2, count: 1 }, // Destroyer
 ];
 
-// Helper function to create a board with randomly placed ships
+// Helper function to create a board with randomly placed ships and return placement status
 export const createBoardWithShips = (): {
   board: CellStatus[][];
   allShipsPlaced: boolean;
