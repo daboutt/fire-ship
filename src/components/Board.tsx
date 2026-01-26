@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './Board.css';
+import { createBoardWithShips } from '../utils/shipPlacement';
 
 export type CellStatus = 'empty' | 'ship' | 'hit' | 'miss';
 
@@ -28,67 +29,12 @@ export default function Board({
 }: BoardProps) {
   // Initialize board with optional ship placement
   const initializeBoard = (): CellStatus[][] => {
-    const board: CellStatus[][] = Array.from({ length: 10 }, () =>
-      Array(10).fill('empty'),
-    );
-
     if (withShipPlacement) {
-      // Random ship placement
-      const ships = [
-        { size: 4, count: 1 }, // Battleship
-        { size: 3, count: 2 }, // Cruiser x2
-        { size: 2, count: 1 }, // Destroyer
-      ];
-
-      const canPlaceShip = (
-        row: number,
-        col: number,
-        size: number,
-        isHorizontal: boolean,
-      ): boolean => {
-        if (isHorizontal) {
-          if (col + size > 10) return false;
-          for (let i = 0; i < size; i++) {
-            if (board[row][col + i] !== 'empty') return false;
-          }
-        } else {
-          if (row + size > 10) return false;
-          for (let i = 0; i < size; i++) {
-            if (board[row + i][col] !== 'empty') return false;
-          }
-        }
-        return true;
-      };
-
-      ships.forEach(({ size, count }) => {
-        for (let ship = 0; ship < count; ship++) {
-          let placed = false;
-          let attempts = 0;
-
-          while (!placed && attempts < 100) {
-            const isHorizontal = Math.random() < 0.5;
-            const row = Math.floor(Math.random() * 10);
-            const col = Math.floor(Math.random() * 10);
-
-            if (canPlaceShip(row, col, size, isHorizontal)) {
-              if (isHorizontal) {
-                for (let i = 0; i < size; i++) {
-                  board[row][col + i] = 'ship';
-                }
-              } else {
-                for (let i = 0; i < size; i++) {
-                  board[row + i][col] = 'ship';
-                }
-              }
-              placed = true;
-            }
-            attempts++;
-          }
-        }
-      });
+      const { board } = createBoardWithShips();
+      return board;
     }
 
-    return board;
+    return Array.from({ length: 10 }, () => Array(10).fill('empty'));
   };
 
   // Local state for interactive board

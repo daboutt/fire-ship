@@ -41,7 +41,6 @@ export default function Game() {
       if (urlRoomCode) {
         // Check if room is still valid
         const isValid = await checkRoomValidity(urlRoomCode);
-        debugger;
         if (isValid) {
           console.log('Restoring session to room:', urlRoomCode);
           setRoomCode(urlRoomCode);
