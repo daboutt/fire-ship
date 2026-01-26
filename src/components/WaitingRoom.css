@@ -7,7 +7,7 @@
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  margin: 2rem 0.5rem;
+  margin: 1rem 0.5rem;
 }
 
 .dot {
@@ -30,4 +30,20 @@
 
 .lobby-waiting-indicator span {
   font-weight: 600;
+}
+.waiting-room-code {
+  font-size: 2rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  background-color: #336699;
+  width: fit-content;
+  margin: 1rem auto;
+
+  button {
+    width: fit-content;
+  }
+}
+.return-lobby {
+  margin-top: 1rem;
 }
