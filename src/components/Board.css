@@ -18,7 +18,7 @@
   display: inline-block;
   border: 3px solid #1c1c1c;
   border-radius: 4px;
-  background-color: #4a8a4c;
+  background-color: #336699;
   padding: 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -26,13 +26,16 @@
 .board-row {
   display: flex;
 }
-
-.board-cell {
+.my-board-grid .board-cell {
   width: clamp(25px, 5vw, 40px);
   height: clamp(25px, 5vw, 40px);
+}
+.board-cell {
+  width: clamp(30px, 5vw, 50px);
+  height: clamp(30px, 5vw, 50px);
   aspect-ratio: 1;
-  border: 1px solid #3d7a3f;
-  background-color: #6bb36e;
+  border: 1px solid #1c1c1c;
+  background-color: #336699;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -51,12 +54,12 @@
 }
 
 .board-cell-ship {
-  background-color: #2d5a2f;
+  background-color: #09315a;
 }
 
 .board-cell-hit {
   background-color: #d9534f;
-  border-color: #c9302c;
+  border-color: #c03221;
 }
 
 .board-cell-miss {

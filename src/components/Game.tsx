@@ -233,24 +233,11 @@ export default function Game() {
 
   return (
     <div className='app'>
-      <h2>Fire Ship Battle</h2>
       <div className='game-info'>
-        <p>
-          Room: <strong>{roomCode}</strong>
-        </p>
-        <p>Status: {isMyTurn ? '🎯 Your turn!' : "⏳ Opponent's turn"}</p>
-        <p>
-          Opponent: {opponentConnected ? '🟢 Connected' : '🔴 Disconnected'}
-        </p>
+        <p>Status: {isMyTurn ? 'Your turn' : "Opponent's turn"}</p>
       </div>
 
       <div className='game-boards'>
-        <Board
-          boardData={myBoard}
-          label='Your Board'
-          disabled={true}
-          isOpponent={false}
-        />
         <Board
           boardData={opponentBoard}
           label='Opponent Board'
@@ -258,6 +245,20 @@ export default function Game() {
           isOpponent={true}
           onCellClick={handleCellClick}
         />
+        <Board
+          boardData={myBoard}
+          label='Your Board'
+          disabled={true}
+          isOpponent={false}
+        />
+      </div>
+      <div className='game-info'>
+        <p>
+          Room: <strong>{roomCode}</strong>
+        </p>
+        <p>
+          Opponent: {opponentConnected ? '🟢 Connected' : '🔴 Disconnected'}
+        </p>
       </div>
     </div>
   );

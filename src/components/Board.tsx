@@ -105,7 +105,9 @@ export default function Board({
   return (
     <div className='board-container'>
       {label && <h3 className='board-label'>{label}</h3>}
-      <div className='board-grid'>
+      <div
+        className={`board-grid ${isOpponent ? 'board-grid-opponent' : 'my-board-grid'}`}
+      >
         {grid.map((row, rowIndex) => (
           <div key={rowIndex} className='board-row'>
             {row.map((cell) => (
