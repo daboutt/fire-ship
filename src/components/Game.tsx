@@ -235,6 +235,9 @@ export default function Game() {
     <div className='app'>
       <div className='game-info'>
         <p>Status: {isMyTurn ? 'Your turn' : "Opponent's turn"}</p>
+        <p>
+          <strong>-{roomCode}-</strong>
+        </p>
       </div>
 
       <div className='game-boards'>
@@ -253,9 +256,6 @@ export default function Game() {
         />
       </div>
       <div className='game-info'>
-        <p>
-          Room: <strong>{roomCode}</strong>
-        </p>
         <p>
           Opponent: {opponentConnected ? '🟢 Connected' : '🔴 Disconnected'}
         </p>

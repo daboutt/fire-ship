@@ -34,7 +34,7 @@
   width: clamp(30px, 5vw, 50px);
   height: clamp(30px, 5vw, 50px);
   aspect-ratio: 1;
-  border: 1px solid #1c1c1c;
+  border: 1px solid #fafffd;
   background-color: #336699;
   display: flex;
   align-items: center;
@@ -54,7 +54,11 @@
 }
 
 .board-cell-ship {
-  background-color: #09315a;
+  background-color: #e2e2e2;
+  border-color: #1c1c1c;
+}
+.board-cell .board-cell-ship {
+  border-color: #1c1c1c;
 }
 
 .board-cell-hit {
