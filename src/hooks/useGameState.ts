@@ -11,12 +11,16 @@ import {
   get,
 } from 'firebase/database';
 import { database } from '../firebase';
-import {
-  createBoardWithShips,
-  validateBoard,
-} from '../utils/shipPlacement';
+import { createBoardWithShips, validateBoard } from '../utils/shipPlacement';
 
-export type CellStatus = 'empty' | 'ship' | 'hit' | 'miss';
+// CellStatus can be 'empty', 'miss', 'hit', or a ship ID (string like 'ship-1')
+export type CellStatus = 'empty' | 'hit' | 'miss' | string;
+
+export interface ShipInfo {
+  id: string;
+  size: number;
+  hits: number;
+}
 
 export interface GameState {
   roomCode: string;
@@ -24,12 +28,14 @@ export interface GameState {
     player1?: {
       id: string;
       board: CellStatus[][];
+      ships?: Record<string, ShipInfo>; // Track ship status
       ready: boolean;
       connected: boolean;
     };
     player2?: {
       id: string;
       board: CellStatus[][];
+      ships?: Record<string, ShipInfo>; // Track ship status
       ready: boolean;
       connected: boolean;
     };
@@ -38,8 +44,6 @@ export interface GameState {
   gameStatus: 'waiting' | 'setup' | 'playing' | 'finished';
   winner?: 'player1' | 'player2';
 }
-
-
 
 export function useGameState(roomCode: string | null, playerId: string) {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -199,7 +203,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
   // Create a new game room
   const createGame = async (): Promise<string> => {
     const gamesRef = ref(database, 'games');
-    
+
     // Generate a unique room code
     let generatedRoomCode: string = '';
     let roomExists = true;
@@ -227,7 +231,11 @@ export function useGameState(roomCode: string | null, playerId: string) {
     }
 
     // Create board with ships for player 1
-    const { board: boardWithShips, allShipsPlaced } = createBoardWithShips();
+    const {
+      board: boardWithShips,
+      ships,
+      allShipsPlaced,
+    } = createBoardWithShips();
 
     if (!allShipsPlaced) {
       console.warn('Not all ships were placed successfully');
@@ -239,6 +247,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
         player1: {
           id: playerId,
           board: boardWithShips,
+          ships: ships,
           ready: true, // Auto-ready since ships are placed
           connected: true,
         },
@@ -274,10 +283,12 @@ export function useGameState(roomCode: string | null, playerId: string) {
       if (game.players.player2 && !game.players.player2?.connected) {
         // Validate existing board before reusing
         if (!validateBoard(game.players.player2.board)) {
-          console.warn(
-            'Invalid player2 board detected, creating new board',
-          );
-          const { board: newBoard, allShipsPlaced } = createBoardWithShips();
+          console.warn('Invalid player2 board detected, creating new board');
+          const {
+            board: newBoard,
+            ships,
+            allShipsPlaced,
+          } = createBoardWithShips();
           if (!allShipsPlaced) {
             console.warn('Not all ships were placed successfully');
           }
@@ -285,6 +296,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
             'players/player2': {
               id: playerId,
               board: newBoard,
+              ships: ships,
               ready: true,
               connected: true,
             },
@@ -298,6 +310,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
           'players/player2': {
             id: playerId,
             board: game.players.player2.board,
+            ships: game.players.player2.ships,
             ready: true, // Auto-ready since ships are placed
             connected: true,
           },
@@ -309,10 +322,12 @@ export function useGameState(roomCode: string | null, playerId: string) {
       if (game.players.player1 && !game.players.player1?.connected) {
         // Validate existing board before reusing
         if (!validateBoard(game.players.player1.board)) {
-          console.warn(
-            'Invalid player1 board detected, creating new board',
-          );
-          const { board: newBoard, allShipsPlaced } = createBoardWithShips();
+          console.warn('Invalid player1 board detected, creating new board');
+          const {
+            board: newBoard,
+            ships,
+            allShipsPlaced,
+          } = createBoardWithShips();
           if (!allShipsPlaced) {
             console.warn('Not all ships were placed successfully');
           }
@@ -320,6 +335,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
             'players/player1': {
               id: playerId,
               board: newBoard,
+              ships: ships,
               ready: true,
               connected: true,
             },
@@ -333,6 +349,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
           'players/player1': {
             id: playerId,
             board: game.players.player1.board,
+            ships: game.players.player1.ships,
             ready: true, // Auto-ready since ships are placed
             connected: true,
           },
@@ -342,7 +359,11 @@ export function useGameState(roomCode: string | null, playerId: string) {
         return true;
       }
       // Create board with ships for player 2
-      const { board: boardWithShips, allShipsPlaced } = createBoardWithShips();
+      const {
+        board: boardWithShips,
+        ships,
+        allShipsPlaced,
+      } = createBoardWithShips();
 
       if (!allShipsPlaced) {
         console.warn('Not all ships were placed successfully');
@@ -352,6 +373,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
         'players/player2': {
           id: playerId,
           board: boardWithShips,
+          ships: ships,
           ready: true, // Auto-ready since ships are placed
           connected: true,
         },
@@ -402,7 +424,8 @@ export function useGameState(roomCode: string | null, playerId: string) {
     if (!gameState) return;
 
     const opponentBoard = gameState.players[opponentKey]?.board;
-    if (!opponentBoard) return;
+    const opponentShips = gameState.players[opponentKey]?.ships;
+    if (!opponentBoard || !opponentShips) return;
 
     // Use transaction-based update to avoid race conditions
     const cellRef = ref(
@@ -421,8 +444,10 @@ export function useGameState(roomCode: string | null, playerId: string) {
         return;
       }
 
-      // Check if cell has a ship
-      const isHit = currentCellStatus === 'ship';
+      // Check if cell has a ship (ship IDs are like 'ship-0', 'ship-1', etc.)
+      const isHit =
+        currentCellStatus !== 'empty' && currentCellStatus !== 'miss';
+      const hitShipId = isHit ? currentCellStatus : null;
       const newStatus: CellStatus = isHit ? 'hit' : 'miss';
 
       // Create a copy of the board with the new hit/miss
@@ -435,26 +460,58 @@ export function useGameState(roomCode: string | null, playerId: string) {
         }),
       );
 
+      // Track ship hits
+      let shipSunk = false;
+      const updatedShips = { ...opponentShips };
+
+      if (isHit && hitShipId) {
+        // Increment hit count for this ship
+        updatedShips[hitShipId] = {
+          ...updatedShips[hitShipId],
+          hits: updatedShips[hitShipId].hits + 1,
+        };
+
+        // Check if ship is completely destroyed
+        if (updatedShips[hitShipId].hits >= updatedShips[hitShipId].size) {
+          shipSunk = true;
+          console.log(`Ship ${hitShipId} has been sunk!`);
+        }
+      }
+
       // Check if all ships are destroyed (win condition)
       const allShipsDestroyed = !updatedBoard.some((row) =>
-        row.some((cell) => cell === 'ship'),
+        row.some(
+          (cell) => cell !== 'empty' && cell !== 'hit' && cell !== 'miss',
+        ),
       );
 
-      // Update the opponent's board
-      const updates: Record<string, CellStatus | string> = {};
+      // Update the opponent's board and ships
+      const updates: Record<
+        string,
+        CellStatus | string | ShipInfo | Record<string, ShipInfo>
+      > = {};
       updates[`games/${roomCode}/players/${opponentKey}/board/${row}/${col}`] =
         newStatus;
+
+      // Update ship tracking
+      if (isHit && hitShipId) {
+        updates[`games/${roomCode}/players/${opponentKey}/ships`] =
+          updatedShips;
+      }
 
       // Check for win
       if (allShipsDestroyed) {
         updates[`games/${roomCode}/gameStatus`] = 'finished';
         updates[`games/${roomCode}/winner`] = playerKey;
       } else {
-        // Only switch turns on a miss - if hit, player keeps their turn
-        if (!isHit) {
+        // Switch turns if:
+        // 1. It's a miss, OR
+        // 2. It's a hit but the ship is completely destroyed (sunk)
+        if (!isHit || shipSunk) {
           const nextTurn = playerKey === 'player1' ? 'player2' : 'player1';
           updates[`games/${roomCode}/currentTurn`] = nextTurn;
         }
+        // Otherwise, keep current player's turn (partial hit on a ship)
       }
 
       await update(ref(database), updates);

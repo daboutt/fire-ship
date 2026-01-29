@@ -1,4 +1,4 @@
-import type { CellStatus } from '../hooks/useGameState';
+import type { CellStatus, ShipInfo } from '../hooks/useGameState';
 
 export interface Ship {
   size: number;
@@ -14,11 +14,14 @@ export const SHIPS: Ship[] = [
 // Helper function to create a board with randomly placed ships and return placement status
 export const createBoardWithShips = (): {
   board: CellStatus[][];
+  ships: Record<string, ShipInfo>;
   allShipsPlaced: boolean;
 } => {
   const board: CellStatus[][] = Array.from({ length: 10 }, () =>
     Array(10).fill('empty'),
   );
+  const ships: Record<string, ShipInfo> = {};
+  let shipIdCounter = 0;
 
   let allShipsPlaced = true;
 
@@ -56,13 +59,17 @@ export const createBoardWithShips = (): {
         const col = Math.floor(Math.random() * 10);
 
         if (canPlaceShip(row, col, size, isHorizontal)) {
+          // Generate unique ship ID
+          const shipId = `ship-${shipIdCounter++}`;
+          ships[shipId] = { id: shipId, size, hits: 0 };
+
           if (isHorizontal) {
             for (let i = 0; i < size; i++) {
-              board[row][col + i] = 'ship';
+              board[row][col + i] = shipId;
             }
           } else {
             for (let i = 0; i < size; i++) {
-              board[row + i][col] = 'ship';
+              board[row + i][col] = shipId;
             }
           }
           placed = true;
@@ -79,7 +86,7 @@ export const createBoardWithShips = (): {
     }
   });
 
-  return { board, allShipsPlaced };
+  return { board, ships, allShipsPlaced };
 };
 
 // Validate that a board has ships placed correctly
@@ -90,11 +97,13 @@ export const validateBoard = (board: CellStatus[][]): boolean => {
     if (!row || row.length !== 10) return false;
   }
 
-  // Count ships on the board
+  // Count ships on the board (cells that are not 'empty', 'hit', or 'miss')
   let shipCount = 0;
   for (const row of board) {
     for (const cell of row) {
-      if (cell === 'ship') shipCount++;
+      if (cell !== 'empty' && cell !== 'hit' && cell !== 'miss') {
+        shipCount++;
+      }
     }
   }
 

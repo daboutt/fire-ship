@@ -31,7 +31,7 @@ export default function Board({
   const initializeBoard = (): CellStatus[][] => {
     if (withShipPlacement) {
       const { board } = createBoardWithShips();
-      return board;
+      return board as CellStatus[][];
     }
 
     return Array.from({ length: 10 }, () => Array(10).fill('empty'));
@@ -71,10 +71,12 @@ export default function Board({
     }
 
     // Update board based on hit or miss
+    // Ship cells have IDs like 'ship-0', 'ship-1', etc. (not 'empty' or 'miss')
     const newBoard = currentBoard.map((r, rIdx) =>
       r.map((c, cIdx) => {
         if (rIdx === row && cIdx === col) {
-          return c === 'ship' ? 'hit' : 'miss';
+          // It's a hit if the cell is not 'empty'
+          return c !== 'empty' ? 'hit' : 'miss';
         }
         return c;
       }),
@@ -86,7 +88,13 @@ export default function Board({
   const getCellClassName = (cell: Cell) => {
     const classes = ['board-cell'];
 
-    if (cell.status === 'ship' && !isOpponent) {
+    // Ship cells have IDs like 'ship-0', 'ship-1', etc. (not 'empty', 'hit', or 'miss')
+    if (
+      cell.status !== 'empty' &&
+      cell.status !== 'hit' &&
+      cell.status !== 'miss' &&
+      !isOpponent
+    ) {
       classes.push('board-cell-ship');
     }
     if (cell.status === 'hit') {
