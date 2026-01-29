@@ -38,8 +38,6 @@ export default function WaitingRoom({
       <button onClick={onReturnToLobby} className='return-lobby'>
         ← Back to Lobby
       </button>
-      {/* Room code goes here */}
-      {/* <div className='lobby-divider'>Share it with your friends</div> */}
     </div>
   );
 }

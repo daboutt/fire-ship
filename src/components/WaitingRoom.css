@@ -39,10 +39,6 @@
   background-color: #336699;
   width: fit-content;
   margin: 1rem auto;
-
-  button {
-    width: fit-content;
-  }
 }
 .return-lobby {
   margin-top: 1rem;
