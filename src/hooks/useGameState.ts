@@ -214,7 +214,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
     while (roomExists && attempts < maxAttempts) {
       // Use timestamp + random chars for better uniqueness
       const timestamp = Date.now().toString(36);
-      const random = Math.random().toString(36).substring(2, 5);
+      const random = crypto.randomUUID().replace(/-/g, '').slice(0, 4);
       generatedRoomCode = (timestamp + random).substring(0, 6).toUpperCase();
 
       // Check if room already exists

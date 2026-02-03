@@ -1,85 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Board from './Board';
 import { useGameState } from '../hooks/useGameState';
+import { usePlayerId } from '../hooks/usePlayerId';
+import { useUrlParams } from '../hooks/useUrlParams';
+import { useSessionRestoration } from '../hooks/useSessionRestoration';
 import './Game.css';
 import WaitingRoom from './WaitingRoom';
-
-// LocalStorage key for player ID only
-const PLAYER_ID_KEY = 'battleship_player_id';
+import WinnerAnnouncement from './WinnerAnnouncement';
 
 export default function Game() {
-  // Get or create player ID from localStorage
-  const [playerId] = useState(() => {
-    const stored = localStorage.getItem(PLAYER_ID_KEY);
-    if (stored) return stored;
+  const { playerId } = usePlayerId();
 
-    const newId = `player-${Math.random().toString(36).slice(2, 11)}`;
-    localStorage.setItem(PLAYER_ID_KEY, newId);
-    return newId;
-  });
-
-  const [roomCode, setRoomCode] = useState<string | null>(null);
   const [inputCode, setInputCode] = useState('');
-  const [isRestoringSession, setIsRestoringSession] = useState(true);
+  const [roomCode, setRoomCode] = useState<string | null>(null);
 
-  const {
-    gameState,
-    error,
-    createGame,
-    cleanGame,
-    joinGame,
-    makeMove,
-    checkRoomValidity,
-  } = useGameState(roomCode, playerId);
+  const { gameState, error, createGame, cleanGame, joinGame, makeMove, checkRoomValidity } = useGameState(
+    roomCode,
+    playerId,
+  );
 
-  // Try to restore session from URL params on mount
+  const { value: urlRoomCode, setParam: setUrlRoomCode, clearParam: clearUrlRoomCode } = useUrlParams<string>('room');
+  const { isRestoring, restoredRoomCode } = useSessionRestoration(checkRoomValidity);
+
+  // Handle session restoration
   useEffect(() => {
-    const restoreSession = async () => {
-      const params = new URLSearchParams(window.location.search);
-      const urlRoomCode = params.get('room');
+    if (!isRestoring && restoredRoomCode) {
+      setRoomCode(restoredRoomCode);
+    }
+  }, [isRestoring, restoredRoomCode]);
 
-      if (urlRoomCode) {
-        // Check if room is still valid
-        const isValid = await checkRoomValidity(urlRoomCode);
-        if (isValid) {
-          console.log('Restoring session to room:', urlRoomCode);
-          setRoomCode(urlRoomCode);
-        } else {
-          console.log('Room from URL is no longer valid, clearing...');
-          // Remove room param from URL
-          window.history.replaceState({}, '', window.location.pathname);
-        }
-      }
-
-      setIsRestoringSession(false);
-    };
-
-    restoreSession();
-  }, [checkRoomValidity]);
-
-  // Update URL when room code changes
+  // Sync room code with URL parameters
   useEffect(() => {
     if (roomCode) {
-      const params = new URLSearchParams(window.location.search);
-      params.set('room', roomCode);
-      window.history.replaceState(
-        {},
-        '',
-        `${window.location.pathname}?${params}`,
-      );
+      setUrlRoomCode(roomCode);
     } else {
-      // Clear room param from URL
-      window.history.replaceState({}, '', window.location.pathname);
+      clearUrlRoomCode();
     }
-  }, [roomCode]);
+  }, [roomCode, setUrlRoomCode, clearUrlRoomCode]);
 
   // Determine which player this is
-  const playerKey: 'player1' | 'player2' | null = (() => {
+  const playerKey: 'player1' | 'player2' | null = useMemo(() => {
     if (!gameState || !playerId) return null;
     if (gameState.players.player1?.id === playerId) return 'player1';
     if (gameState.players.player2?.id === playerId) return 'player2';
     return null;
-  })();
+  }, [gameState, playerId]);
 
   const handleCreateGame = async () => {
     const code = await createGame();
@@ -107,10 +72,7 @@ export default function Game() {
     const opponentBoard = gameState.players[opponentKey]?.board;
 
     // Check if cell was already attacked
-    if (
-      opponentBoard &&
-      (opponentBoard[row][col] === 'hit' || opponentBoard[row][col] === 'miss')
-    ) {
+    if (opponentBoard && (opponentBoard[row][col] === 'hit' || opponentBoard[row][col] === 'miss')) {
       console.log('Already attacked this cell!');
       return;
     }
@@ -119,10 +81,10 @@ export default function Game() {
   };
 
   // Show loading while restoring session
-  if (isRestoringSession) {
+  if (isRestoring) {
     return (
-      <div className='app'>
-        <div className='waiting-room'>
+      <div className="app">
+        <div className="waiting-room">
           <p>Restoring your game session...</p>
         </div>
       </div>
@@ -130,28 +92,28 @@ export default function Game() {
   }
 
   if (error) {
-    return <div className='game-error'>Error: {error}</div>;
+    return <div className="game-error">Error: {error}</div>;
   }
 
   // Lobby view - no game yet
   if (!roomCode || !gameState) {
     return (
-      <div className='app'>
+      <div className="app">
         <h2>Fire Ship Battle</h2>
-        <div className='lobby'>
-          <p className='lobby-hint'>Start a new game and share the code</p>
-          <div className='lobby-section'>
+        <div className="lobby">
+          <p className="lobby-hint">Start a new game and share the code</p>
+          <div className="lobby-section">
             <button onClick={handleCreateGame}>New Game</button>
           </div>
-          <div className='lobby-divider'>
+          <div className="lobby-divider">
             <span>OR</span>
           </div>
-          <p className='lobby-hint'>Enter the code shared by your friend</p>
-          <div className='lobby-section lobby-join-section'>
+          <p className="lobby-hint">Enter the code shared by your friend</p>
+          <div className="lobby-section lobby-join-section">
             <input
-              className='lobby-input-code'
-              type='text'
-              placeholder='code'
+              className="lobby-input-code"
+              type="text"
+              placeholder="code"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
@@ -172,7 +134,6 @@ export default function Game() {
           setRoomCode(null);
           setInputCode('');
           cleanGame();
-          window.history.replaceState({}, '', window.location.pathname);
         }}
       />
     );
@@ -180,47 +141,14 @@ export default function Game() {
 
   // Game finished - show winner
   if (gameState.gameStatus === 'finished' && gameState.winner) {
-    const youWon = gameState.winner === playerKey;
     return (
-      <div className='app'>
-        <div className='waiting-room'>
-          <h2 style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-            {youWon ? '🎉 Victory!' : '💔 Defeat'}
-          </h2>
-          <div
-            style={{
-              fontSize: '1.5rem',
-              marginBottom: '2rem',
-              color: youWon ? '#4CAF50' : '#ff6b6b',
-            }}
-          >
-            {youWon ? (
-              <p>
-                <strong>You Win!</strong>
-                <br />
-                You destroyed all enemy ships! 🚢💥
-              </p>
-            ) : (
-              <p>
-                <strong>You Lost!</strong>
-                <br />
-                Your opponent destroyed all your ships!
-              </p>
-            )}
-          </div>
-          <div className='lobby-divider'>Game Over</div>
-          <button
-            onClick={() => {
-              // Clear room code and URL params
-              setRoomCode(null);
-              setInputCode('');
-            }}
-            style={{ marginTop: '2rem', fontSize: '1.1rem' }}
-          >
-            Return to Lobby
-          </button>
-        </div>
-      </div>
+      <WinnerAnnouncement
+        isYouWon={gameState.winner === playerKey}
+        onReturnToLobby={() => {
+          setRoomCode(null);
+          setInputCode('');
+        }}
+      />
     );
   }
 
@@ -232,33 +160,26 @@ export default function Game() {
   const opponentConnected = gameState.players[opponentKey]?.connected ?? false;
 
   return (
-    <div className='app'>
-      <div className='game-info'>
+    <div className="app">
+      <div className="game-info">
         <p>Status: {isMyTurn ? 'Your turn' : "Opponent's turn"}</p>
         <p>
           <strong>-{roomCode}-</strong>
         </p>
       </div>
 
-      <div className='game-boards'>
+      <div className="game-boards">
         <Board
           boardData={opponentBoard}
-          label='Opponent Board'
+          label="Opponent Board"
           disabled={!isMyTurn}
           isOpponent={true}
           onCellClick={handleCellClick}
         />
-        <Board
-          boardData={myBoard}
-          label='Your Board'
-          disabled={true}
-          isOpponent={false}
-        />
+        <Board boardData={myBoard} label="Your Board" disabled={true} isOpponent={false} />
       </div>
-      <div className='game-info'>
-        <p>
-          Opponent: {opponentConnected ? '🟢 Connected' : '🔴 Disconnected'}
-        </p>
+      <div className="game-info">
+        <p>Opponent: {opponentConnected ? '🟢 Connected' : '🔴 Disconnected'}</p>
       </div>
     </div>
   );
