@@ -46,3 +46,27 @@
   display: flex;
   flex-direction: column;
 }
+
+/* Finished screen */
+.finished-title {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.finished-message {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.finished-win {
+  color: #4caf50;
+}
+
+.finished-lose {
+  color: #ff6b6b;
+}
+
+.return-lobby-btn {
+  margin-top: 2rem;
+  font-size: 1.1rem;
+}
