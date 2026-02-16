@@ -123,6 +123,7 @@ function ActiveGame({ gameState, playerKey, roomCode, onCellClick }: ActiveGameP
   const isMyTurn = gameState.currentTurn === playerKey;
   const opponentConnected = gameState.players[opponentKey]?.connected ?? false;
 
+  // This is a line for new year 26, best wishes
   return (
     <div className="app">
       <div className="game-info">
