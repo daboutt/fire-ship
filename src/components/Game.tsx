@@ -155,7 +155,7 @@ function ActiveGame({ gameState, playerKey, roomCode, onCellClick }: ActiveGameP
 
 export default function Game() {
   const [playerId] = useState(getOrCreatePlayerId);
-  const [roomCode, setRoomCode] = useState<string | null>(null);
+  const [roomCode, setRoomCode] = useState("");
   const [inputCode, setInputCode] = useState("");
   const [isRestoringSession, setIsRestoringSession] = useState(true);
 
@@ -202,7 +202,7 @@ export default function Game() {
   );
 
   const handleReturnToLobby = useCallback(() => {
-    setRoomCode(null);
+    setRoomCode("");
     setInputCode("");
     cleanGame();
     window.history.replaceState({}, "", window.location.pathname);
@@ -230,13 +230,10 @@ export default function Game() {
 
   // Sync room code to URL
   useEffect(() => {
-    if (roomCode) {
-      const params = new URLSearchParams(window.location.search);
-      params.set("room", roomCode);
-      window.history.replaceState({}, "", `${window.location.pathname}?${params}`);
-    } else {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
+    if (!roomCode) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("room", roomCode);
+    window.history.replaceState({}, "", `${window.location.pathname}?${params}`);
   }, [roomCode]);
 
   if (isRestoringSession) return <LoadingScreen />;
