@@ -11,9 +11,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Use Node 22
         uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pn
+        # with:
+        #   node-version: 22
+        #   cache: pn
       - name: Install dependencies
         run: pn i
       - name: Build
