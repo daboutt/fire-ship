@@ -8,33 +8,18 @@ import GameFinish from "../../components/GameFinish";
 import Loading from "../../components/Loading";
 import { Player } from "./types";
 import type { PlayerKey } from "./types";
-import { PLAYER_ID_KEY } from "./constants";
-
-function getOrCreatePlayerId(): string {
-  const stored = localStorage.getItem(PLAYER_ID_KEY);
-  if (stored) return stored;
-
-  const newId = `player-${crypto.randomUUID()}`;
-  localStorage.setItem(PLAYER_ID_KEY, newId);
-  return newId;
-}
+import { getOrCreatePlayerId } from "./utils";
 
 function ErrorScreen({ message }: { message: string }) {
   return <div className="game-error">Error: {message}</div>;
 }
 
-// --- Main component ---
-
 export default function Game() {
-  const [playerId] = useState(getOrCreatePlayerId);
   const [roomCode, setRoomCode] = useState("");
-  const [inputCode, setInputCode] = useState("");
   const [isRestoringSession, setIsRestoringSession] = useState(true);
 
-  const { gameState, error, createGame, cleanGame, joinGame, makeMove, checkRoomValidity } = useGameState(
-    roomCode,
-    playerId
-  );
+  const playerId = useMemo(() => getOrCreatePlayerId(), []);
+  const { gameState, error, createGame, cleanGame, makeMove, checkRoomValidity } = useGameState(roomCode, playerId);
 
   const playerKey = useMemo<Player | null>(() => {
     if (!gameState) return null;
@@ -54,16 +39,6 @@ export default function Game() {
     setRoomCode(code);
   }, [createGame]);
 
-  const handleJoinGame = useCallback(async () => {
-    const normalized = inputCode.trim().toUpperCase();
-    if (!normalized) return;
-
-    const success = await joinGame(normalized);
-    if (success) {
-      setRoomCode(normalized);
-    }
-  }, [inputCode, joinGame]);
-
   const handleCellClick = useCallback(
     async (row: number, col: number) => {
       if (!gameState || !roomCode || !playerKeyStr) return;
@@ -81,7 +56,6 @@ export default function Game() {
 
   const handleReturnToLobby = useCallback(() => {
     setRoomCode("");
-    setInputCode("");
     cleanGame();
     window.history.replaceState({}, "", window.location.pathname);
   }, [cleanGame]);
@@ -118,14 +92,7 @@ export default function Game() {
   if (error) return <ErrorScreen message={error} />;
 
   if (!roomCode || !gameState) {
-    return (
-      <Home
-        onCreateGame={handleCreateGame}
-        inputCode={inputCode}
-        onInputCodeChange={setInputCode}
-        onJoinGame={handleJoinGame}
-      />
-    );
+    return <Home playerId={playerId} roomCode={roomCode} setRoomCode={setRoomCode} onCreateGame={handleCreateGame} />;
   }
 
   if (gameState.gameStatus === "waiting") {

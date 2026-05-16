@@ -1,11 +1,30 @@
+import { useCallback, useState } from "react";
+import { useGameState } from "../features/game/hooks/useGameState";
+
 interface HomeProps {
+  roomCode: string;
+  playerId: string;
+  setRoomCode: (code: string) => void;
   onCreateGame: () => void;
-  inputCode: string;
-  onInputCodeChange: (value: string) => void;
-  onJoinGame: () => void;
+  // inputCode: string;
+  // onInputCodeChange: (value: string) => void;
+  // onJoinGame: () => void;
 }
 
-export default function Home({ onCreateGame, inputCode, onInputCodeChange, onJoinGame }: HomeProps) {
+export default function Home({ roomCode, playerId, setRoomCode, onCreateGame }: HomeProps) {
+  const { joinGame } = useGameState(roomCode, playerId);
+  const [inputCode, setInputCode] = useState("");
+
+  const handleJoinGame = useCallback(async () => {
+    const normalized = inputCode.trim().toUpperCase();
+    if (!normalized) return;
+
+    const success = await joinGame(normalized);
+    if (success) {
+      setRoomCode(normalized);
+    }
+  }, [inputCode, joinGame, setRoomCode]);
+
   return (
     <div className="app">
       <h2>Fire Ship Battle</h2>
@@ -24,11 +43,11 @@ export default function Home({ onCreateGame, inputCode, onInputCodeChange, onJoi
             type="text"
             placeholder="code"
             value={inputCode}
-            onChange={(e) => onInputCodeChange(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onJoinGame()}
+            onChange={(e) => setInputCode(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleJoinGame()}
             maxLength={6}
           />
-          <button onClick={onJoinGame}>Join Game</button>
+          <button onClick={handleJoinGame}>Join Game</button>
         </div>
       </div>
     </div>
