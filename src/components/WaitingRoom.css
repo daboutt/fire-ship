@@ -23,7 +23,7 @@
 
 .lobby-waiting-indicator::before,
 .lobby-waiting-indicator::after {
-  content: '';
+  content: "";
   flex: 1;
   height: 1px;
 }

@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import './Board.css';
-import { createBoardWithShips } from '../utils/shipPlacement';
-
-export type CellStatus = 'empty' | 'ship' | 'hit' | 'miss';
+import { useState, useMemo, useCallback } from "react";
+import "./Board.css";
+import { createBoardWithShips } from "../features/game/utils/shipPlacement";
+import type { CellStatus } from "../features/game/types";
 
 interface Cell {
   row: number;
@@ -16,7 +15,7 @@ interface BoardProps {
   onCellClick?: (row: number, col: number) => void;
   disabled?: boolean;
   label?: string;
-  withShipPlacement?: boolean; // Enable random ship placement for demo
+  withShipPlacement?: boolean;
 }
 
 export default function Board({
@@ -34,102 +33,97 @@ export default function Board({
       return board as CellStatus[][];
     }
 
-    return Array.from({ length: 10 }, () => Array(10).fill('empty'));
+    return Array.from({ length: 10 }, () => Array(10).fill("empty"));
   };
 
   // Local state for interactive board
-  const [internalBoard, setInternalBoard] =
-    useState<CellStatus[][]>(initializeBoard);
+  const [internalBoard, setInternalBoard] = useState<CellStatus[][]>(initializeBoard);
 
   // Use provided boardData or internal state
-  const currentBoard = boardData || internalBoard;
+  const currentBoard = boardData ?? internalBoard;
 
-  // Create grid from current board
-  const grid: Cell[][] = currentBoard.map((row, rowIndex) =>
-    row.map((status, colIndex) => ({
-      row: rowIndex,
-      col: colIndex,
-      status,
-    })),
+  const grid: Cell[][] = useMemo(
+    () =>
+      currentBoard.map((row, rowIndex) =>
+        row.map((status, colIndex) => ({
+          row: rowIndex,
+          col: colIndex,
+          status,
+        }))
+      ),
+    [currentBoard]
   );
 
-  const handleCellClick = (row: number, col: number) => {
-    if (disabled) return;
+  const handleCellClick = useCallback(
+    (row: number, col: number) => {
+      if (disabled) return;
 
-    // If external handler provided, use it
-    if (onCellClick) {
-      onCellClick(row, col);
-      return;
-    }
+      // If external handler provided, use it
+      if (onCellClick) {
+        onCellClick(row, col);
+        return;
+      }
 
-    // Otherwise, handle internally (for standalone demo)
-    const cell = currentBoard[row][col];
+      // Otherwise, handle internally (for standalone demo)
+      const cell = currentBoard[row][col];
 
-    // Don't allow clicking already attacked cells
-    if (cell === 'hit' || cell === 'miss') {
-      return;
-    }
+      // Don't allow clicking already attacked cells
+      if (cell === "hit" || cell === "miss") {
+        return;
+      }
 
-    // Update board based on hit or miss
-    // Ship cells have IDs like 'ship-0', 'ship-1', etc. (not 'empty' or 'miss')
-    const newBoard = currentBoard.map((r, rIdx) =>
-      r.map((c, cIdx) => {
-        if (rIdx === row && cIdx === col) {
-          // It's a hit if the cell is not 'empty'
-          return c !== 'empty' ? 'hit' : 'miss';
-        }
-        return c;
-      }),
-    );
+      // Update board based on hit or miss
+      const newBoard = currentBoard.map((r, rIdx) =>
+        r.map((c, cIdx) => {
+          if (rIdx === row && cIdx === col) {
+            // It's a hit if the cell is not 'empty'
+            return c !== "empty" ? "hit" : "miss";
+          }
+          return c;
+        })
+      );
 
-    setInternalBoard(newBoard as CellStatus[][]);
-  };
+      setInternalBoard(newBoard);
+    },
+    [currentBoard, disabled, onCellClick]
+  );
 
-  const getCellClassName = (cell: Cell) => {
-    const classes = ['board-cell'];
+  const getCellClassName = useCallback(
+    (cell: Cell) => {
+      const classes = ["board-cell"];
 
-    // Ship cells have IDs like 'ship-0', 'ship-1', etc. (not 'empty', 'hit', or 'miss')
-    if (
-      cell.status !== 'empty' &&
-      cell.status !== 'hit' &&
-      cell.status !== 'miss' &&
-      !isOpponent
-    ) {
-      classes.push('board-cell-ship');
-    }
-    if (cell.status === 'hit') {
-      classes.push('board-cell-hit');
-    }
-    if (cell.status === 'miss') {
-      classes.push('board-cell-miss');
-    }
-    if (!disabled && isOpponent) {
-      classes.push('board-cell-clickable');
-    }
+      if (cell.status !== "empty" && cell.status !== "hit" && cell.status !== "miss" && !isOpponent) {
+        classes.push("board-cell-ship");
+      }
+      if (cell.status === "hit") {
+        classes.push("board-cell-hit");
+      }
+      if (cell.status === "miss") {
+        classes.push("board-cell-miss");
+      }
+      if (!disabled && isOpponent) {
+        classes.push("board-cell-clickable");
+      }
 
-    return classes.join(' ');
-  };
+      return classes.join(" ");
+    },
+    [disabled, isOpponent]
+  );
 
   return (
-    <div className='board-container'>
-      {label && <h3 className='board-label'>{label}</h3>}
-      <div
-        className={`board-grid ${isOpponent ? 'board-grid-opponent' : 'my-board-grid'}`}
-      >
+    <div className="board-container">
+      {label && <h3 className="board-label">{label}</h3>}
+      <div className={`board-grid ${isOpponent ? "board-grid-opponent" : "my-board-grid"}`}>
         {grid.map((row, rowIndex) => (
-          <div key={rowIndex} className='board-row'>
+          <div key={rowIndex} className="board-row">
             {row.map((cell) => (
               <div
                 key={`${cell.row}-${cell.col}`}
                 className={getCellClassName(cell)}
                 onClick={() => handleCellClick(cell.row, cell.col)}
               >
-                {cell.status === 'hit' && (
-                  <div className='board-cell-marker hit-marker'>✕</div>
-                )}
-                {cell.status === 'miss' && (
-                  <div className='board-cell-marker miss-marker'>○</div>
-                )}
+                {cell.status === "hit" && <div className="board-cell-marker hit-marker">✕</div>}
+                {cell.status === "miss" && <div className="board-cell-marker miss-marker">○</div>}
               </div>
             ))}
           </div>

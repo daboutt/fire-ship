@@ -1,4 +1,4 @@
-import type { CellStatus, ShipInfo } from '../hooks/useGameState';
+import type { CellStatus, ShipInfo, ShipId } from "../types";
 
 export interface Ship {
   size: number;
@@ -6,41 +6,34 @@ export interface Ship {
 }
 
 export const SHIPS: Ship[] = [
-  { size: 4, count: 1 }, // Battleship
-  { size: 3, count: 2 }, // Cruiser x2
-  { size: 2, count: 1 }, // Destroyer
+  { size: 4, count: 1 },
+  { size: 3, count: 2 },
+  { size: 2, count: 1 },
 ];
 
 // Helper function to create a board with randomly placed ships and return placement status
 export const createBoardWithShips = (): {
   board: CellStatus[][];
-  ships: Record<string, ShipInfo>;
+  ships: Record<ShipId, ShipInfo>;
   allShipsPlaced: boolean;
 } => {
-  const board: CellStatus[][] = Array.from({ length: 10 }, () =>
-    Array(10).fill('empty'),
-  );
-  const ships: Record<string, ShipInfo> = {};
+  const board: CellStatus[][] = Array.from({ length: 10 }, () => Array(10).fill("empty"));
+  const ships: Record<ShipId, ShipInfo> = {};
   let shipIdCounter = 0;
 
   let allShipsPlaced = true;
 
   // Helper to check if placement is valid
-  const canPlaceShip = (
-    row: number,
-    col: number,
-    size: number,
-    isHorizontal: boolean,
-  ): boolean => {
+  const canPlaceShip = (row: number, col: number, size: number, isHorizontal: boolean): boolean => {
     if (isHorizontal) {
       if (col + size > 10) return false;
       for (let i = 0; i < size; i++) {
-        if (board[row][col + i] !== 'empty') return false;
+        if (board[row][col + i] !== "empty") return false;
       }
     } else {
       if (row + size > 10) return false;
       for (let i = 0; i < size; i++) {
-        if (board[row + i][col] !== 'empty') return false;
+        if (board[row + i][col] !== "empty") return false;
       }
     }
     return true;
@@ -60,7 +53,7 @@ export const createBoardWithShips = (): {
 
         if (canPlaceShip(row, col, size, isHorizontal)) {
           // Generate unique ship ID
-          const shipId = `ship-${shipIdCounter++}`;
+          const shipId = `ship-${shipIdCounter++}` as ShipId;
           ships[shipId] = { id: shipId, size, hits: 0 };
 
           if (isHorizontal) {
@@ -78,9 +71,7 @@ export const createBoardWithShips = (): {
       }
 
       if (!placed) {
-        console.warn(
-          `Failed to place ship of size ${size} after ${maxAttempts} attempts`,
-        );
+        console.warn(`Failed to place ship of size ${size} after ${maxAttempts} attempts`);
         allShipsPlaced = false;
       }
     }
@@ -101,17 +92,14 @@ export const validateBoard = (board: CellStatus[][]): boolean => {
   let shipCount = 0;
   for (const row of board) {
     for (const cell of row) {
-      if (cell !== 'empty' && cell !== 'hit' && cell !== 'miss') {
+      if (cell !== "empty" && cell !== "hit" && cell !== "miss") {
         shipCount++;
       }
     }
   }
 
   // Calculate expected ship count
-  const expectedShipCount = SHIPS.reduce(
-    (sum, ship) => sum + ship.size * ship.count,
-    0,
-  );
+  const expectedShipCount = SHIPS.reduce((sum, ship) => sum + ship.size * ship.count, 0);
 
   return shipCount === expectedShipCount;
 };
