@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { ref, set, onValue, update, push, DataSnapshot, onDisconnect, remove, get } from "firebase/database";
 import { database } from "../../../firebase";
-import { createBoardWithShips, validateBoard } from "../utils/shipPlacement";
 import type { CellStatus, GameState, PlayerKey, ShipInfo } from "../types";
+import { createBoardWithShips, validateBoard } from "../utils/shipPlacement";
 
 export function useGameState(roomCode: string | null, playerId: string) {
   const [gameState, setGameState] = useState<GameState | null>(null);

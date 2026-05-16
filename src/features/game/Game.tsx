@@ -6,9 +6,9 @@ import WaitingRoom from "../../components/WaitingRoom";
 import Home from "../../components/Home";
 import GameFinish from "../../components/GameFinish";
 import Loading from "../../components/Loading";
-import { PLAYER_ID_KEY } from "./lib/players";
 import { Player } from "./types";
 import type { PlayerKey } from "./types";
+import { PLAYER_ID_KEY } from "./constants";
 
 function getOrCreatePlayerId(): string {
   const stored = localStorage.getItem(PLAYER_ID_KEY);
