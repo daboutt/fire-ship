@@ -98,6 +98,8 @@ input {
   display: flex;
   flex-direction: column;
   text-align: center;
+  align-items: center;
+  justify-content: center;
 }
 
 lobby-divider {
@@ -109,7 +111,7 @@ lobby-divider {
 
 .lobby-divider::before,
 .lobby-divider::after {
-  content: '';
+  content: "";
   flex: 1;
   height: 1px;
   background: #e0e0e0;
@@ -127,6 +129,7 @@ lobby-divider {
   margin: 0.75rem 0 0 0;
 }
 .lobby-section {
+  width: 500px;
   margin: 1rem 0;
 }
 .lobby-input-code {
