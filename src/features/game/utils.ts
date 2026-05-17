@@ -1,22 +1,21 @@
-import type { CellStatus, ShipInfo, ShipId } from "../types";
+import { PLAYER_ID_KEY, SHIPS } from "./constants";
+import type { CellStatus, ShipId, ShipInfo } from "./types";
 
-export interface Ship {
-  size: number;
-  count: number;
+export function getOrCreatePlayerId(): string {
+  const stored = localStorage.getItem(PLAYER_ID_KEY);
+  if (stored) return stored;
+
+  const newId = `player-${crypto.randomUUID()}`;
+  localStorage.setItem(PLAYER_ID_KEY, newId);
+  return newId;
 }
 
-export const SHIPS: Ship[] = [
-  { size: 4, count: 1 },
-  { size: 3, count: 2 },
-  { size: 2, count: 1 },
-];
-
 // Helper function to create a board with randomly placed ships and return placement status
-export const createBoardWithShips = (): {
+export function createBoardWithShips(): {
   board: CellStatus[][];
   ships: Record<ShipId, ShipInfo>;
   allShipsPlaced: boolean;
-} => {
+} {
   const board: CellStatus[][] = Array.from({ length: 10 }, () => Array(10).fill("empty"));
   const ships: Record<ShipId, ShipInfo> = {};
   let shipIdCounter = 0;
@@ -78,10 +77,10 @@ export const createBoardWithShips = (): {
   });
 
   return { board, ships, allShipsPlaced };
-};
+}
 
 // Validate that a board has ships placed correctly
-export const validateBoard = (board: CellStatus[][]): boolean => {
+export function validateBoard(board: CellStatus[][]): boolean {
   if (!board || board.length !== 10) return false;
 
   for (const row of board) {
@@ -102,4 +101,4 @@ export const validateBoard = (board: CellStatus[][]): boolean => {
   const expectedShipCount = SHIPS.reduce((sum, ship) => sum + ship.size * ship.count, 0);
 
   return shipCount === expectedShipCount;
-};
+}

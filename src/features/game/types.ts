@@ -15,6 +15,10 @@ export interface ShipInfo {
   hits: number;
 }
 
+export type Ship = {
+  size: number;
+  count: number;
+};
 export interface PlayerState {
   id: string;
   board: CellStatus[][];
