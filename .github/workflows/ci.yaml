@@ -1,20 +1,25 @@
-name: CI
-
+name: pnpm Example Workflow
 on:
-  pull_request:
-    branches: [main]
+  push:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        node-version: [24, 22]
     steps:
-      - uses: actions/checkout@v4
-      - name: Use Node 22
-        uses: actions/setup-node@v4
-        # with:
-        #   node-version: 22
-        #   cache: pn
+      - uses: actions/checkout@v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+        with:
+          version: 11
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
       - name: Install dependencies
-        run: pn i
+        run: pnpm install
       - name: Build
-        run: pn build
+        run: pnpm build
