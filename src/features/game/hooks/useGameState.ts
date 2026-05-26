@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { ref, set, onValue, update, push, DataSnapshot, onDisconnect, remove, get } from "firebase/database";
-import { database } from "../../../firebase";
+import { database } from "../../../utils/firebase";
 import type { CellStatus, GameState, PlayerKey, ShipInfo } from "../types";
 import { createBoardWithShips, validateBoard } from "../utils";
 

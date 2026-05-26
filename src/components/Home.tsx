@@ -18,7 +18,6 @@ export default function Home({ roomCode, playerId, setRoomCode, onCreateGame }: 
   const handleJoinGame = useCallback(async () => {
     const normalized = inputCode.trim().toUpperCase();
     if (!normalized) return;
-
     const success = await joinGame(normalized);
     if (success) {
       setRoomCode(normalized);
