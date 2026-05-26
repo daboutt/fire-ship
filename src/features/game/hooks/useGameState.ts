@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ref, set, onValue, update, push, DataSnapshot, onDisconnect, remove, get } from "firebase/database";
 import { database } from "../../../firebase";
 import type { CellStatus, GameState, PlayerKey, ShipInfo } from "../types";
-import { createBoardWithShips, validateBoard } from "../utils/shipPlacement";
+import { createBoardWithShips, validateBoard } from "../utils";
 
 export function useGameState(roomCode: string | null, playerId: string) {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -155,6 +155,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
 
   // Create a new game room
   const createGame = async (): Promise<string> => {
+    setError(null);
     const gamesRef = ref(database, "games");
 
     // Generate a unique room code
@@ -210,6 +211,7 @@ export function useGameState(roomCode: string | null, playerId: string) {
 
   // Join an existing game
   const joinGame = async (code: string): Promise<boolean> => {
+    setError(null);
     const gameRef = ref(database, `games/${code}`);
 
     try {

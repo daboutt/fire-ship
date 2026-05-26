@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import "./Board.css";
-import { createBoardWithShips } from "../features/game/utils/shipPlacement";
 import type { CellStatus } from "../features/game/types";
+import { createBoardWithShips } from "../features/game/utils";
 
 interface Cell {
   row: number;

@@ -21,7 +21,7 @@ export default function Game() {
   const playerId = useMemo(() => getOrCreatePlayerId(), []);
   const { gameState, error, createGame, cleanGame, makeMove, checkRoomValidity } = useGameState(roomCode, playerId);
 
-  const playerKey = useMemo<Player | null>(() => {
+  const playerKey = useMemo(() => {
     if (!gameState) return null;
     if (gameState.players.player1?.id === playerId) return Player.Player1;
     if (gameState.players.player2?.id === playerId) return Player.Player2;
@@ -54,9 +54,9 @@ export default function Game() {
     [gameState, roomCode, playerKeyStr, makeMove]
   );
 
-  const handleReturnToLobby = useCallback(() => {
+  const handleReturnToLobby = useCallback(async () => {
     setRoomCode("");
-    cleanGame();
+    await cleanGame();
     window.history.replaceState({}, "", window.location.pathname);
   }, [cleanGame]);
 
