@@ -87,15 +87,22 @@ export function useGameState(roomCode: string | null, playerId: string) {
             const player2Connected = data.players?.player2?.connected ?? false;
             if (!player1Connected && !player2Connected) {
               console.log("Both players disconnected, deleting room...");
-              remove(gameRef).catch((error) => {
-                console.error("Error deleting room:", error);
-              });
+              // Add delay to avoid race condition with reconnection attempts
+              setTimeout(() => {
+                remove(gameRef).catch((error) => {
+                  console.error("Error deleting room:", error);
+                });
+              }, 2000);
             }
           }
         },
         (error) => {
           console.error("Firebase error:", error);
           setError(error.message);
+          isCancelled = true; // Prevent further updates
+          if (unsubscribe) {
+            unsubscribe(); // Clean up listener on error
+          }
         }
       );
     };
@@ -344,7 +351,11 @@ export function useGameState(roomCode: string | null, playerId: string) {
 
     const opponentBoard = gameState.players[opponentKey]?.board;
     const opponentShips = gameState.players[opponentKey]?.ships;
-    if (!opponentBoard || !opponentShips) return;
+    if (!opponentBoard || !opponentShips) {
+      console.error("Opponent board or ships not found");
+      setError("Unable to attack: opponent data not available");
+      return;
+    }
 
     // Use transaction-based update to avoid race conditions
     const cellRef = ref(database, `games/${roomCode}/players/${opponentKey}/board/${row}/${col}`);
