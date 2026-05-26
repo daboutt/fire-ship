@@ -26,6 +26,49 @@ export function useGameState(roomCode: string | null, playerId: string) {
     }
   }, []);
 
+  const cleanGame = useCallback(async () => {
+    if (!roomCode) return;
+
+    const gameRef = ref(database, `games/${roomCode}`);
+
+    // Determine which player this is and mark them as disconnected
+    let playerKey: PlayerKey | null = null;
+
+    try {
+      const snapshot = await get(gameRef);
+
+      const data = snapshot.val();
+      if (!data) {
+        return;
+      }
+
+      if (data.players?.player1?.id === playerId) {
+        playerKey = "player1";
+      } else if (data.players?.player2?.id === playerId) {
+        playerKey = "player2";
+      }
+
+      if (!playerKey) {
+        return;
+      }
+
+      const otherPlayerKey = playerKey === "player1" ? "player2" : "player1";
+      const otherPlayerConnected = data.players?.[otherPlayerKey]?.connected;
+
+      // Mark this player as disconnected.
+      await update(gameRef, {
+        [`players/${playerKey}/connected`]: false,
+      });
+
+      // If no other player is connected, clean up the entire game.
+      if (!otherPlayerConnected) {
+        await remove(gameRef);
+      }
+    } catch (error) {
+      console.error("Error cleaning game:", error);
+    }
+  }, [roomCode, playerId]);
+
   useEffect(() => {
     if (!roomCode) {
       return;
@@ -114,51 +157,10 @@ export function useGameState(roomCode: string | null, playerId: string) {
       if (unsubscribe) {
         unsubscribe();
       }
+      // Clean up game state on unmount
+      void cleanGame();
     };
-  }, [roomCode, playerId]);
-
-  const cleanGame = useCallback(async () => {
-    if (!roomCode) return;
-
-    const gameRef = ref(database, `games/${roomCode}`);
-
-    // Determine which player this is and mark them as disconnected
-    let playerKey: PlayerKey | null = null;
-
-    try {
-      const snapshot = await get(gameRef);
-
-      const data = snapshot.val();
-      if (!data) {
-        return;
-      }
-
-      if (data.players?.player1?.id === playerId) {
-        playerKey = "player1";
-      } else if (data.players?.player2?.id === playerId) {
-        playerKey = "player2";
-      }
-
-      if (!playerKey) {
-        return;
-      }
-
-      const otherPlayerKey = playerKey === "player1" ? "player2" : "player1";
-      const otherPlayerConnected = data.players?.[otherPlayerKey]?.connected;
-
-      // Mark this player as disconnected.
-      await update(gameRef, {
-        [`players/${playerKey}/connected`]: false,
-      });
-
-      // If no other player is connected, clean up the entire game.
-      if (!otherPlayerConnected) {
-        await remove(gameRef);
-      }
-    } catch (error) {
-      console.error("Error cleaning game:", error);
-    }
-  }, [roomCode, playerId]);
+  }, [roomCode, playerId, cleanGame]);
 
   // Create a new game room
   const createGame = async (): Promise<string> => {

@@ -34,6 +34,6 @@ export interface GameState {
     player2?: PlayerState;
   };
   currentTurn?: PlayerKey;
-  gameStatus: "waiting" | "setup" | "playing" | "finished";
+  gameStatus: "waiting" | "playing" | "finished";
   winner?: PlayerKey;
 }
