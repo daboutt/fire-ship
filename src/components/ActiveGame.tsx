@@ -21,6 +21,12 @@ export default function ActiveGame({ gameState, playerKey, roomCode, onCellClick
 
   return (
     <div className="app">
+      {!opponentConnected && (
+        <div className="disconnect-banner">
+          Opponent disconnected — waiting for them to reconnect...
+        </div>
+      )}
+
       <div className="game-info">
         <p>Status: {isMyTurn ? "Your turn" : "Opponent's turn"}</p>
         <p>
@@ -32,15 +38,11 @@ export default function ActiveGame({ gameState, playerKey, roomCode, onCellClick
         <Board
           boardData={opponentBoard}
           label="Opponent Board"
-          disabled={!isMyTurn}
+          disabled={!isMyTurn || !opponentConnected}
           isOpponent
           onCellClick={onCellClick}
         />
         <Board boardData={myBoard} label="Your Board" disabled isOpponent={false} />
-      </div>
-
-      <div className="game-info">
-        <p>Opponent: {opponentConnected ? "🟢 Connected" : "🔴 Disconnected"}</p>
       </div>
     </div>
   );

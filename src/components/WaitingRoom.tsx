@@ -1,5 +1,5 @@
+import { useState } from "react";
 import "./WaitingRoom.css";
-import { motion } from "motion/react";
 
 interface WaitingRoomProps {
   roomCode: string;
@@ -7,30 +7,29 @@ interface WaitingRoomProps {
 }
 
 export default function WaitingRoom({ roomCode, onReturnToLobby }: WaitingRoomProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(roomCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="waiting-room">
       <h2>ROOM CODE</h2>
-      <div className="waiting-room-code">{roomCode}</div>
+      <button className="waiting-room-code" onClick={handleCopy} title="Click to copy">
+        {roomCode}
+        <span className="copy-hint">{copied ? " ✓ Copied!" : " 📋"}</span>
+      </button>
 
       <p className="lobby-waiting-indicator">
         <span>Waiting for players</span>
 
         <div className="waiting-dots">
-          <motion.div
-            className="dot"
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 0.8, repeat: Infinity, delay: 0 }}
-          />
-          <motion.div
-            className="dot"
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 0.8, repeat: Infinity, delay: 0.3 }}
-          />
-          <motion.div
-            className="dot"
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 0.8, repeat: Infinity, delay: 0.6 }}
-          />
+          <div className="dot" style={{ animationDelay: "0s" }} />
+          <div className="dot" style={{ animationDelay: "0.3s" }} />
+          <div className="dot" style={{ animationDelay: "0.6s" }} />
         </div>
       </p>
       <button onClick={onReturnToLobby} className="return-lobby">

@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import "./Board.css";
 import type { CellStatus } from "../features/game/types";
-import { createBoardWithShips } from "../features/game/utils";
 
 interface Cell {
   row: number;
@@ -15,7 +14,6 @@ interface BoardProps {
   onCellClick?: (row: number, col: number) => void;
   disabled?: boolean;
   label?: string;
-  withShipPlacement?: boolean;
 }
 
 export default function Board({
@@ -24,20 +22,10 @@ export default function Board({
   onCellClick,
   disabled = false,
   label,
-  withShipPlacement = false,
 }: BoardProps) {
-  // Initialize board with optional ship placement
-  const initializeBoard = (): CellStatus[][] => {
-    if (withShipPlacement) {
-      const { board } = createBoardWithShips();
-      return board as CellStatus[][];
-    }
-
-    return Array.from({ length: 10 }, () => Array(10).fill("empty"));
-  };
-
-  // Local state for interactive board
-  const [internalBoard, setInternalBoard] = useState<CellStatus[][]>(initializeBoard);
+  const [internalBoard, setInternalBoard] = useState<CellStatus[][]>(() =>
+    Array.from({ length: 10 }, () => Array(10).fill("empty"))
+  );
 
   // Use provided boardData or internal state
   const currentBoard = boardData ?? internalBoard;

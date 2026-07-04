@@ -47,6 +47,22 @@
   flex-direction: column;
 }
 
+.lobby-error {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.disconnect-banner {
+  background-color: #7a2020;
+  color: #fafffd;
+  text-align: center;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
 /* Finished screen */
 .finished-title {
   font-size: 3rem;

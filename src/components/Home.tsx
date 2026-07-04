@@ -1,28 +1,19 @@
 import { useCallback, useState } from "react";
-import { useGameState } from "../features/game/hooks/useGameState";
 
 interface HomeProps {
-  roomCode: string;
-  playerId: string;
-  setRoomCode: (code: string) => void;
   onCreateGame: () => void;
-  // inputCode: string;
-  // onInputCodeChange: (value: string) => void;
-  // onJoinGame: () => void;
+  onJoinGame: (code: string) => Promise<boolean>;
+  joinError: string | null;
 }
 
-export default function Home({ roomCode, playerId, setRoomCode, onCreateGame }: HomeProps) {
-  const { joinGame } = useGameState(roomCode, playerId);
+export default function Home({ onCreateGame, onJoinGame, joinError }: HomeProps) {
   const [inputCode, setInputCode] = useState("");
 
   const handleJoinGame = useCallback(async () => {
     const normalized = inputCode.trim().toUpperCase();
     if (!normalized) return;
-    const success = await joinGame(normalized);
-    if (success) {
-      setRoomCode(normalized);
-    }
-  }, [inputCode, joinGame, setRoomCode]);
+    await onJoinGame(normalized);
+  }, [inputCode, onJoinGame]);
 
   return (
     <div className="app">
@@ -47,6 +38,7 @@ export default function Home({ roomCode, playerId, setRoomCode, onCreateGame }: 
             maxLength={6}
           />
           <button onClick={handleJoinGame}>Join Game</button>
+          {joinError && <p className="lobby-error">{joinError}</p>}
         </div>
       </div>
     </div>

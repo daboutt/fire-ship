@@ -19,7 +19,7 @@ export default function Game() {
   const [isRestoringSession, setIsRestoringSession] = useState(true);
 
   const playerId = useMemo(() => getOrCreatePlayerId(), []);
-  const { gameState, error, createGame, cleanGame, makeMove, checkRoomValidity } = useGameState(roomCode, playerId);
+  const { gameState, error, createGame, joinGame, cleanGame, makeMove, checkRoomValidity } = useGameState(roomCode, playerId);
 
   const playerKey = useMemo(() => {
     if (!gameState) return null;
@@ -52,6 +52,15 @@ export default function Game() {
       await makeMove(roomCode, playerKeyStr, opponentKeyStr, row, col);
     },
     [gameState, roomCode, playerKeyStr, makeMove]
+  );
+
+  const handleJoinGame = useCallback(
+    async (code: string): Promise<boolean> => {
+      const success = await joinGame(code);
+      if (success) setRoomCode(code);
+      return success;
+    },
+    [joinGame]
   );
 
   const handleReturnToLobby = useCallback(async () => {
@@ -92,7 +101,7 @@ export default function Game() {
   if (error) return <ErrorScreen message={error} />;
 
   if (!roomCode || !gameState) {
-    return <Home playerId={playerId} roomCode={roomCode} setRoomCode={setRoomCode} onCreateGame={handleCreateGame} />;
+    return <Home onCreateGame={handleCreateGame} onJoinGame={handleJoinGame} joinError={error} />;
   }
 
   if (gameState.gameStatus === "waiting") {

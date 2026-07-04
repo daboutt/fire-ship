@@ -15,6 +15,12 @@
   height: 6px;
   border-radius: 50%;
   background: #fafffd;
+  animation: bounce 0.8s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 .lobby-waiting-indicator {
   display: flex;
@@ -39,6 +45,19 @@
   background-color: #336699;
   width: fit-content;
   margin: 1rem auto;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.waiting-room-code:hover {
+  border-color: #fafffd;
+  background-color: #3d7ab5;
+}
+
+.copy-hint {
+  font-size: 1rem;
+  opacity: 0.8;
 }
 .return-lobby {
   margin-top: 1rem;
